@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud_firestore {
+  match /databases/{database}/documents {
+    
+    // Global safety net - default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // Reusable global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    
+    function incoming() {
+      return request.resource.data;
+    }
+    
+    function existing() {
+      return resource.data;
+    }
+    
+    // Task Entity Validation Helper
+    function isValidTask(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.status is string && (data.status == 'todo' || data.status == 'in_progress' || data.status == 'done') &&
+             data.priority is string && (data.priority == 'low' || data.priority == 'medium' || data.priority == 'high') &&
+             data.dueDate is string && data.dueDate.size() <= 30 &&
+             data.frequency is string && (data.frequency == 'none' || data.frequency == 'daily' || data.frequency == 'weekly' || data.frequency == 'monthly') &&
+             data.userId == request.auth.uid &&
+             data.userEmail == request.auth.token.email &&
+             data.createdAt is number &&
+             data.updatedAt is number;
+    }
+    
+    // Tasks Collection match block
+    match /tasks/{taskId} {
+      // 1. Read security - strictly enforce user-ownership of tasks. 
+      // This prevents multi-tenant data leaks and applies to both get and list.
+      allow get: if isSignedIn() && isValidId(taskId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      // 2. Create security - check auth, validate complete initial shape, verify user IDs.
+      allow create: if isSignedIn() && isValidId(taskId) && 
+                      incoming().keys().hasAll(['title', 'description', 'status', 'priority', 'dueDate', 'frequency', 'userId', 'userEmail', 'createdAt', 'updatedAt']) &&
+                      incoming().keys().size() == 10 &&
+                      isValidTask(incoming());
+                      
+      // 3. Update security - only owner can update, must maintain valid shape, and can modify task details.
+      allow update: if isSignedIn() && isValidId(taskId) && 
+                      existing().userId == request.auth.uid &&
+                      isValidTask(incoming()) &&
+                      // Enforce immutability of creation timestamp and owner fields
+                      incoming().createdAt == existing().createdAt &&
+                      incoming().userId == existing().userId &&
+                      incoming().userEmail == existing().userEmail;
+                      
+      // 4. Delete security - only owner can delete.
+      allow delete: if isSignedIn() && isValidId(taskId) && existing().userId == request.auth.uid;
+    }
+  }
+}

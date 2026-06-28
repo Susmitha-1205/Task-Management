@@ -1,0 +1,6 @@
+{
+  "name": "Task Management",
+  "description": "A real-time, highly polished collaborative task manager featuring secure Google authentication, fluid list tracking, and task board management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

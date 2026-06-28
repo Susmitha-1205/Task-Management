@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "Task": {
+      "title": "Task",
+      "description": "A collaborative task managed by a user.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "The title of the task."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the task."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["todo", "in_progress", "done"],
+          "description": "The current status of the task."
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["low", "medium", "high"],
+          "description": "The priority level of the task."
+        },
+        "dueDate": {
+          "type": "string",
+          "description": "The due date of the task in YYYY-MM-DD format."
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["none", "daily", "weekly", "monthly"],
+          "description": "The recurrence frequency of the task."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who owns/created the task."
+        },
+        "userEmail": {
+          "type": "string",
+          "description": "The email of the user who owns/created the task."
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Creation timestamp."
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last updated timestamp."
+        }
+      },
+      "required": ["title", "status", "priority", "frequency", "userId", "userEmail", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Collection of tasks managed by authenticated users."
+    }
+  }
+}
